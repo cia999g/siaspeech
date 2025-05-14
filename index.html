@@ -1,31 +1,92 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Speech Recognition Test</title>
+  <meta charset="UTF-8" />
+  <title>Speech Accuracy</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 40px;
+    }
+    #progressCircle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: conic-gradient(#4caf50 0%, #ddd 0%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px auto;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
-  <h2>🎙 Google Web Speech API 테스트</h2>
-  <button onclick="startRecognition()">🟢 음성 인식 시작</button>
-  <p id="resultText">🎯 인식된 문장이 여기에 표시됩니다</p>
+  <h2>🎙 Speak in English</h2>
+  <button onclick="startRecognition()">Start Recognition</button>
+
+  <p id="resultText">🎯 Recognized: <span id="recognizedText">...</span></p>
+  <p id="accuracyText">📊 Accuracy: <span id="accuracyResult">...</span></p>
+
+  <div id="progressCircle">0%</div>
 
   <script>
+    const targetSentence = "This is a pen";
+
     function startRecognition() {
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = 'en-US';  // 한국어면 'ko-KR'
+      recognition.lang = 'en-US';
       recognition.interimResults = false;
 
       recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript;
-        document.getElementById('resultText').textContent = "📌 결과: " + transcript;
+        const transcript = event.results[0][0].transcript.trim();
+        document.getElementById('recognizedText').textContent = transcript;
+
+        const accuracy = calculateAccuracy(transcript.toLowerCase(), targetSentence.toLowerCase());
+        document.getElementById('accuracyResult').textContent = accuracy + '% 일치합니다.';
+        updateProgressCircle(accuracy);
       };
 
       recognition.onerror = function(event) {
-        alert("🚨 오류 발생: " + event.error);
+        alert("오류 발생: " + event.error);
       };
 
       recognition.start();
     }
+
+    function calculateAccuracy(a, b) {
+      const distance = levenshtein(a, b);
+      const maxLen = Math.max(a.length, b.length);
+      if (maxLen === 0) return 100;
+      return Math.round((1 - distance / maxLen) * 100);
+    }
+
+    function levenshtein(a, b) {
+      const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+      for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+      for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+
+      for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+          if (a[i - 1] === b[j - 1]) {
+            dp[i][j] = dp[i - 1][j - 1];
+          } else {
+            dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+          }
+        }
+      }
+      return dp[a.length][b.length];
+    }
+
+    function updateProgressCircle(percent) {
+      const progress = document.getElementById("progressCircle");
+      progress.textContent = percent + "%";
+      progress.style.background = `conic-gradient(#4caf50 ${percent}%, #ddd ${percent}%)`;
+    }
   </script>
 </body>
 </html>
+
