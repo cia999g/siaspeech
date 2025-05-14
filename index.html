@@ -2,18 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Speech Accuracy</title>
+  <title>English Speaking Accuracy</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
       margin-top: 40px;
     }
+    #micButton {
+      padding: 12px 20px;
+      font-size: 18px;
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #micIcon {
+      margin-right: 8px;
+    }
     #progressCircle {
       width: 150px;
       height: 150px;
       border-radius: 50%;
-      background: conic-gradient(#4caf50 0%, #ddd 0%);
+      background: conic-gradient(#2196f3 0%, #ddd 0%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -22,42 +34,69 @@
       font-weight: bold;
       color: #333;
     }
+    #resultDisplay {
+      font-size: 18px;
+      margin-top: 20px;
+    }
+    .wrong {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-  <h2>🎙 Speak in English</h2>
-  <button onclick="startRecognition()">Start Recognition</button>
-
-  <p id="resultText">🎯 Recognized: <span id="recognizedText">...</span></p>
-  <p id="accuracyText">📊 Accuracy: <span id="accuracyResult">...</span></p>
+  <h2>🎙 Speak the sentence:</h2>
+  <p><strong>"This is a pen"</strong></p>
+  <button id="micButton" onclick="startRecognition()">
+    <span id="micIcon">🎤</span><span id="btnText">Start Recording</span>
+  </button>
 
   <div id="progressCircle">0%</div>
+  <p id="accuracyText">Accuracy: ...</p>
+  <div id="resultDisplay">You said: <span id="coloredResult">...</span></div>
 
   <script>
-    const targetSentence = "This is a pen";
+    const target = "This is a pen";
 
     function startRecognition() {
+      const btn = document.getElementById("btnText");
+      btn.textContent = "Recording...";
+      
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = 'en-US';
       recognition.interimResults = false;
 
       recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript.trim();
-        document.getElementById('recognizedText').textContent = transcript;
+        const result = event.results[0][0].transcript.trim();
+        btn.textContent = "Start Recording";
 
-        const accuracy = calculateAccuracy(transcript.toLowerCase(), targetSentence.toLowerCase());
-        document.getElementById('accuracyResult').textContent = accuracy + '% 일치합니다.';
+        const accuracy = getAccuracy(result.toLowerCase(), target.toLowerCase());
+        document.getElementById("accuracyText").textContent = `Accuracy: ${accuracy}%`;
         updateProgressCircle(accuracy);
+
+        // 단어 단위 비교 → 틀린 단어는 빨간색으로 표시
+        const resultWords = result.split(" ");
+        const targetWords = target.split(" ");
+        let colored = "";
+        for (let i = 0; i < targetWords.length; i++) {
+          if (resultWords[i] && resultWords[i].toLowerCase() === targetWords[i].toLowerCase()) {
+            colored += `<span>${resultWords[i]}</span> `;
+          } else {
+            colored += `<span class="wrong">${resultWords[i] || "(missing)"}</span> `;
+          }
+        }
+        document.getElementById("coloredResult").innerHTML = colored.trim();
       };
 
       recognition.onerror = function(event) {
         alert("오류 발생: " + event.error);
+        btn.textContent = "Start Recording";
       };
 
       recognition.start();
     }
 
-    function calculateAccuracy(a, b) {
+    function getAccuracy(a, b) {
       const distance = levenshtein(a, b);
       const maxLen = Math.max(a.length, b.length);
       if (maxLen === 0) return 100;
@@ -68,14 +107,10 @@
       const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
       for (let i = 0; i <= a.length; i++) dp[i][0] = i;
       for (let j = 0; j <= b.length; j++) dp[0][j] = j;
-
       for (let i = 1; i <= a.length; i++) {
         for (let j = 1; j <= b.length; j++) {
-          if (a[i - 1] === b[j - 1]) {
-            dp[i][j] = dp[i - 1][j - 1];
-          } else {
-            dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-          }
+          if (a[i - 1] === b[j - 1]) dp[i][j] = dp[i - 1][j - 1];
+          else dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
         }
       }
       return dp[a.length][b.length];
@@ -84,9 +119,8 @@
     function updateProgressCircle(percent) {
       const progress = document.getElementById("progressCircle");
       progress.textContent = percent + "%";
-      progress.style.background = `conic-gradient(#4caf50 ${percent}%, #ddd ${percent}%)`;
+      progress.style.background = `conic-gradient(#2196f3 ${percent}%, #ddd ${percent}%)`;
     }
   </script>
 </body>
 </html>
-
