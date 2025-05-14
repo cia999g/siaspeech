@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Speech Recognition Test</title>
+</head>
+<body>
+  <h2>🎙 Google Web Speech API 테스트</h2>
+  <button onclick="startRecognition()">🟢 음성 인식 시작</button>
+  <p id="resultText">🎯 인식된 문장이 여기에 표시됩니다</p>
+
+  <script>
+    function startRecognition() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';  // 한국어면 'ko-KR'
+      recognition.interimResults = false;
+
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('resultText').textContent = "📌 결과: " + transcript;
+      };
+
+      recognition.onerror = function(event) {
+        alert("🚨 오류 발생: " + event.error);
+      };
+
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
